@@ -1,0 +1,46 @@
+{
+    "name": "opencck/mercurius-search",
+    "description": "Web search for AMPHP agents behind one interface: SearXNG, Brave, Tavily and OpenRouter web search, with fallback and a cache",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["amphp", "search", "searxng", "brave", "tavily", "openrouter", "agent"],
+    "require": {
+        "php": ">=8.2",
+        "amphp/amp": "^3",
+        "amphp/http-client": "^5"
+    },
+    "require-dev": {
+        "amphp/phpunit-util": "^3",
+        "phpstan/phpstan": "^2",
+        "phpunit/phpunit": "^9.6",
+        "psalm/plugin-phpunit": "^0.22.2",
+        "vimeo/psalm": "^6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mercurius\\Search\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mercurius\\Search\\Test\\": "test/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.27"
+        },
+        "allow-plugins": {}
+    },
+    "scripts": {
+        "test": "php -d zend.assertions=1 -d assert.exception=1 vendor/bin/phpunit",
+        "phpstan": "phpstan analyse --no-progress --memory-limit=1G",
+        "psalm": "psalm --no-progress --show-info=false",
+        "check": [
+            "@test",
+            "@phpstan",
+            "@psalm"
+        ]
+    }
+}
