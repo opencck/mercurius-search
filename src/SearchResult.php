@@ -13,7 +13,14 @@ final class SearchResult {
         public readonly string $provider,
         public readonly array $hits,
         public readonly ?string $answer = null,
+        /** the model call the search made; null — none, or the answer came from a cache */
+        public readonly ?SearchUsage $usage = null,
     ) {}
+
+    /** The same result without its cost: what a cache gives back. */
+    public function withoutUsage(): self {
+        return new self($this->provider, $this->hits, $this->answer);
+    }
 
     /** Plain text for a model: the answer, then the pages with links. */
     public function toText(): string {

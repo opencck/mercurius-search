@@ -68,6 +68,21 @@ final class ProvidersTest extends AsyncTestCase {
 
         self::assertSame('Выйдет в ноябре.', $result->answer);
         self::assertSame(['https://php.net/a', 'https://wiki.example/b'], array_map(static fn(SearchHit $h): string => $h->url, $result->hits));
+        self::assertNull($result->usage, 'no usage in the answer: nothing to count');
+    }
+
+    public function testOpenRouterTellsWhatItsModelCallCost(): void {
+        $fake = new FakeHttp([[200, self::json([
+            'model' => 'openai/gpt-x',
+            'choices' => [['message' => ['content' => 'Ответ.']]],
+            'usage' => ['prompt_tokens' => 1200, 'completion_tokens' => 300, 'cost' => 0.0123],
+        ])]]);
+
+        $result = (new OpenRouterProvider(FakeHttp::client($fake), 'sk-or', 'openai/gpt-x:online'))->search('php', 5);
+
+        self::assertNotNull($result->usage);
+        self::assertSame(['openai/gpt-x:online', 1200, 300, 0.0123], [$result->usage->model, $result->usage->inputTokens, $result->usage->outputTokens, $result->usage->costUsd]);
+        self::assertStringContainsString('"usage":{"include":true}', \Amp\ByteStream\buffer($fake->requests[0]->getBody()->getContent()));
     }
 
     public function testAFailedProviderHandsOverAndErrorsCarryNoKey(): void {
@@ -99,7 +114,9 @@ final class ProvidersTest extends AsyncTestCase {
         });
 
         self::assertSame('one', $search->search('PHP  8.6')->hits[0]->title ?? null);
-        self::assertSame('one', $search->search('php 8.6')->hits[0]->title ?? null, 'case and spaces do not matter');
+        $cached = $search->search('php 8.6');
+        self::assertSame('one', $cached->hits[0]->title ?? null, 'case and spaces do not matter');
+        self::assertNull($cached->usage, 'a cached answer cost nothing this time');
         $now += 601.0;
         self::assertSame('two', $search->search('php 8.6')->hits[0]->title ?? null);
         self::assertCount(2, $fake->requests);

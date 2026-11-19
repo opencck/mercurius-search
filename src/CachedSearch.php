@@ -37,7 +37,8 @@ final class CachedSearch implements SearchProvider {
         $key = $limit . "\0" . mb_strtolower(trim(preg_replace('~\s+~u', ' ', $query) ?? $query));
         $now = ($this->clock)();
         if (isset($this->entries[$key]) && $this->entries[$key][0] > $now) {
-            return $this->entries[$key][1];
+            // the call was paid once, when the answer was cached
+            return $this->entries[$key][1]->withoutUsage();
         }
         $result = $this->inner->search($query, $limit, $cancellation);
         unset($this->entries[$key]);

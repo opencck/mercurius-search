@@ -11,6 +11,7 @@ use Mercurius\Search\Internal\Json;
 use Mercurius\Search\SearchHit;
 use Mercurius\Search\SearchProvider;
 use Mercurius\Search\SearchResult;
+use Mercurius\Search\SearchUsage;
 use SensitiveParameter;
 
 /**
@@ -35,6 +36,18 @@ final class OpenRouterProvider implements SearchProvider {
         return 'openrouter';
     }
 
+    /** @param array<array-key, mixed> $data */
+    private function usage(array $data): ?SearchUsage {
+        $usage = isset($data['usage']) && is_array($data['usage']) ? $data['usage'] : null;
+        if ($usage === null) {
+            return null;
+        }
+        $int = static fn(mixed $v): int => is_int($v) ? max(0, $v) : 0;
+        /** @var mixed $cost */
+        $cost = $usage['cost'] ?? null;
+        return new SearchUsage($this->model, $int($usage['prompt_tokens'] ?? 0), $int($usage['completion_tokens'] ?? 0), is_int($cost) || is_float($cost) ? (float) $cost : null);
+    }
+
     public function search(string $query, int $limit = 5, ?Cancellation $cancellation = null): SearchResult {
         $request = new Request(self::URL, 'POST', json_encode([
             'model' => $this->model,
@@ -44,6 +57,8 @@ final class OpenRouterProvider implements SearchProvider {
             ],
             'plugins' => [['id' => 'web', 'max_results' => min(10, $limit)]],
             'max_tokens' => 1500,
+            // the cost of the call comes in usage: the caller counts it to whoever searched
+            'usage' => ['include' => true],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
         $request->setHeader('authorization', 'Bearer ' . $this->key);
         $request->setHeader('content-type', 'application/json');
@@ -59,6 +74,6 @@ final class OpenRouterProvider implements SearchProvider {
             }
         }
         $answer = Json::str($message, 'content');
-        return new SearchResult($this->name(), array_values($hits), $answer === '' ? null : $answer);
+        return new SearchResult($this->name(), array_values($hits), $answer === '' ? null : $answer, $this->usage($data));
     }
 }
