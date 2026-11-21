@@ -1,5 +1,7 @@
 [English](README.md) | [Русский](README.ru.md) | **中文**
 
+> 本文由模型翻译，尚未经人工审校；如有出入，以英文版为准。
+
 # mercurius-search
 
 面向 [AMPHP](https://amphp.org) 智能体的网络搜索，统一在一个接口之后。属于
